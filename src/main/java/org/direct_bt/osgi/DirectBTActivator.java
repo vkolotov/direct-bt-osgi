@@ -18,9 +18,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Hashtable;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * OSGi {@link BundleActivator} for the re-manifested Direct-BT fat jar.
@@ -40,7 +42,10 @@ public final class DirectBTActivator implements BundleActivator {
 
     // Dependency order: base lib and SONAME alias first, then JNI shims, direct_bt and its alias, then JNI binding.
     private static final String[] LIBS = { "libjaulib.so", "libjaulib.so.1", "libjaulib_pkg_jni.so",
-            "libjaulib_jni_jni.so", "libdirect_bt.so", "libdirect_bt.so.3", "libjavadirect_bt.so" };
+            "libjaulib_jni_jni.so", "libdirect_bt.so", "libdirect_bt.so.3", "libdirect_bt.so.1391460",
+            "libjavadirect_bt.so" };
+
+    private ServiceRegistration<DirectBTNativeLibraryProvider> nativeLibraryProvider;
 
     @Override
     public void start(BundleContext context) throws Exception {
@@ -58,14 +63,28 @@ public final class DirectBTActivator implements BundleActivator {
                     throw new IOException("Bundled native library not found in lib jar: " + resource);
                 }
                 Path target = libDir.resolve(lib);
-                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+                Path tmp = Files.createTempFile(libDir, lib, ".tmp");
+                try {
+                    Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+                    Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                } finally {
+                    Files.deleteIfExists(tmp);
+                }
                 System.out.println("[direct-bt] Extracted native library " + target);
             }
         }
+        nativeLibraryProvider = context.registerService(DirectBTNativeLibraryProvider.class,
+                () -> libDir, new Hashtable<>());
+        System.out.println("[direct-bt] Native libraries ready in " + libDir);
     }
 
     @Override
     public void stop(BundleContext context) throws Exception {
+        ServiceRegistration<DirectBTNativeLibraryProvider> registration = nativeLibraryProvider;
+        if (registration != null) {
+            registration.unregister();
+            nativeLibraryProvider = null;
+        }
         // Leave the extracted libs + loaded JNI in place: the native BTManager is a process singleton and the
         // libraries cannot be unloaded; a binding refresh re-acquires them.
     }

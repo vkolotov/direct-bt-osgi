@@ -98,6 +98,10 @@
                     tofile="${project.build.outputDirectory}/natives/linux-amd64/libdirect_bt.so.3"
                     overwrite="true" />
                 <copy
+                    file="${project.build.directory}/direct-bt-unpacked/natives/linux-amd64/libdirect_bt.so"
+                    tofile="${project.build.outputDirectory}/natives/linux-amd64/libdirect_bt.so.1391460"
+                    overwrite="true" />
+                <copy
                     file="${project.build.directory}/direct-bt-unpacked/natives/linux-amd64/libjaulib.so"
                     tofile="${project.build.outputDirectory}/natives/linux-amd64/libjaulib.so.1"
                     overwrite="true" />
@@ -120,8 +124,8 @@
             <!-- Fold the published direct-bt jar (classes + natives/) into this bundle. -->
             <Embed-Dependency>direct-bt;inline=true</Embed-Dependency>
             <Embed-Transitive>false</Embed-Transitive>
-            <Include-Resource>{maven-resources},natives/linux-amd64/libdirect_bt.so.3=${project.build.outputDirectory}/natives/linux-amd64/libdirect_bt.so.3,natives/linux-amd64/libjaulib.so.1=${project.build.outputDirectory}/natives/linux-amd64/libjaulib.so.1</Include-Resource>
-            <Export-Package>org.direct_bt,org.jau.net</Export-Package>
+            <Include-Resource>{maven-resources},natives/linux-amd64/libdirect_bt.so.3=${project.build.outputDirectory}/natives/linux-amd64/libdirect_bt.so.3,natives/linux-amd64/libdirect_bt.so.1391460=${project.build.outputDirectory}/natives/linux-amd64/libdirect_bt.so.1391460,natives/linux-amd64/libjaulib.so.1=${project.build.outputDirectory}/natives/linux-amd64/libjaulib.so.1</Include-Resource>
+            <Export-Package>org.direct_bt,org.direct_bt.osgi,org.jau.net</Export-Package>
             <Import-Package>org.osgi.framework</Import-Package>
           </instructions>
         </configuration>
