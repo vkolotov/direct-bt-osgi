@@ -38,9 +38,9 @@ import org.osgi.framework.BundleContext;
  */
 public final class DirectBTActivator implements BundleActivator {
 
-    // Dependency order: base lib first, then its JNI shims, then direct_bt, then its JNI binding.
-    private static final String[] LIBS = { "libjaulib.so", "libjaulib_pkg_jni.so", "libjaulib_jni_jni.so",
-            "libdirect_bt.so", "libjavadirect_bt.so" };
+    // Dependency order: base lib and SONAME alias first, then JNI shims, direct_bt and its alias, then JNI binding.
+    private static final String[] LIBS = { "libjaulib.so", "libjaulib.so.1", "libjaulib_pkg_jni.so",
+            "libjaulib_jni_jni.so", "libdirect_bt.so", "libdirect_bt.so.3", "libjavadirect_bt.so" };
 
     @Override
     public void start(BundleContext context) throws Exception {

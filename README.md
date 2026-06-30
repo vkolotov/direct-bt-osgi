@@ -11,6 +11,11 @@ This is layer 2 of a two-layer setup:
    `BundleActivator` that extracts the natives onto `java.library.path` at start. Output is
    `org.direct_bt:direct-bt-osgi`.
 
+The wrapper also adds the native SONAME filenames required by the dynamic linker:
+`libjaulib.so.1` and `libdirect_bt.so.3`. They are generated during the Maven build from the
+plain `org.direct_bt:direct-bt` artifact, so no runtime symlink rule or manual post-processing is
+needed.
+
 The openHAB Direct-BT binding references the wrapper output as
 `mvn:org.direct_bt/direct-bt-osgi/<version>`.
 
@@ -28,6 +33,9 @@ Until upstream publishes it, install the dependency locally first from the direc
 # in the direct_bt checkout, after building the fat jar target:
 maven/publish.sh install
 ```
+
+For the current openHAB Direct-BT work, that locally installed `org.direct_bt:direct-bt` artifact
+should be built from the patched native fork until the corresponding upstream PRs are merged.
 
 ## Why a separate wrapper
 
