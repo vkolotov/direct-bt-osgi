@@ -7,17 +7,32 @@ This is layer 2 of a two-layer setup:
 1. Upstream (sgothel/direct_bt) publishes the plain library `org.direct_bt:direct-bt` to a Maven
    repository (the fat jar with the Java API and platform natives). See the `maven/` module in that
    repo.
-2. This wrapper depends on that artifact, embeds it, and adds the OSGi manifest plus a
-   `BundleActivator` that extracts the natives onto `java.library.path` at start. Output is
-   `org.direct_bt:direct-bt-osgi`.
-
-The wrapper also adds the native SONAME filenames required by the dynamic linker:
-`libjaulib.so.1` and `libdirect_bt.so.3`. They are generated during the Maven build from the
-plain `org.direct_bt:direct-bt` artifact, so no runtime symlink rule or manual post-processing is
-needed.
+2. This wrapper depends on that artifact, embeds it (Java classes + `natives/linux-amd64/*.so`), and
+   adds the OSGi manifest — including a `Bundle-NativeCode` header — plus a small `BundleActivator`.
+   Output is `org.direct_bt:direct-bt-osgi`.
 
 The openHAB Direct-BT binding references the wrapper output as
 `mvn:org.direct_bt/direct-bt-osgi/<version>`.
+
+## How the natives are loaded
+
+The native `.so`s are carried in the bundle and declared in the `Bundle-NativeCode` manifest header.
+The OSGi framework handles extraction: on `System.loadLibrary(basename)` it unpacks the matching library
+from the bundle to its private cache and serves it via the bundle classloader's `findLibrary` hook. There
+is no runtime hand-extraction and no build-time repacking of the natives.
+
+The `BundleActivator` (`DirectBTActivator`) does two small things:
+
+- sets `jau.pkg.UseTempJarCache=false`. jaulib's default loader (`TempJarCache`) locates its natives by
+  scanning a flat classpath, which does not exist in OSGi (each bundle is its own classloader). With it
+  off, Direct-BT's `JNILibrary.loadLibraryImpl` uses plain `System.loadLibrary(name)` — the mode
+  `Bundle-NativeCode` services.
+- publishes a `DirectBTNativeLibraryProvider` marker service once it has run, so the binding (which
+  `@Reference`s it) does not activate before the loader is configured.
+
+The actual load is triggered later by Direct-BT's `BTFactory.initLibrary`, through `BTFactory.class`'s
+classloader — this (lib) bundle — so the JNI stays bound to a bundle that is never hot-swapped. That is
+what lets the openHAB binding bundle be refreshed (hot-swapped) without a full restart.
 
 ## Build
 

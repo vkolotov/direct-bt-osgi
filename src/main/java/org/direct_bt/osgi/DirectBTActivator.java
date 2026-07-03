@@ -12,12 +12,6 @@
  */
 package org.direct_bt.osgi;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Hashtable;
 
 import org.osgi.framework.BundleActivator;
@@ -27,55 +21,32 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * OSGi {@link BundleActivator} for the re-manifested Direct-BT fat jar.
  * <p>
- * On bundle start it extracts the Direct-BT / jaulib native libraries that are bundled in THIS jar (under
- * {@code natives/<arch>/}) onto the JVM's {@code java.library.path}, so Direct-BT's own loader
- * ({@code org.jau.sys.JNILibrary} / {@code org.direct_bt.PlatformToolkit}) finds and {@code System.load}s
- * them by basename. It disables the jau {@code TempJarCache} loader (unreliable in OSGi).
+ * The native libraries are carried in this bundle under {@code natives/<arch>/} and declared in the
+ * {@code Bundle-NativeCode} manifest header. The OSGi framework unpacks the matching library from the
+ * bundle and serves it to {@code System.loadLibrary(basename)} via the bundle classloader's
+ * {@code findLibrary} hook — so this activator does no native extraction itself.
  * <p>
- * Owning native extraction here (in the lib bundle that is never hot-swapped) instead of in the binding
- * bundle is what makes the binding hot-swappable: the JNI library is bound to the classloader of the class
- * that calls {@code System.load} — always a lib-jar class — so it survives a binding-bundle refresh. We do
- * NOT {@code System.load} by absolute path here (that would not satisfy Direct-BT's later load-by-basename
- * and yields {@code UnsatisfiedLinkError}); we only place the files where Direct-BT's loader looks.
+ * It only disables jaulib's {@code TempJarCache} loader (which cannot locate its jar in OSGi, where there
+ * is no flat classpath). With it off, Direct-BT's {@code JNILibrary.loadLibraryImpl} uses plain
+ * {@code System.loadLibrary(name)}, the mode {@code Bundle-NativeCode} services. The actual load is
+ * triggered later by Direct-BT's {@code BTFactory.initLibrary} through {@code BTFactory.class}'s
+ * classloader — this (lib) bundle — so the JNI stays bound to a bundle that is never hot-swapped,
+ * preserving hot-swap of the openHAB binding bundle.
+ * <p>
+ * A {@link DirectBTNativeLibraryProvider} marker service is published once this activator has run, so the
+ * binding (which {@code @Reference}s it) does not activate before the loader is configured.
  */
 public final class DirectBTActivator implements BundleActivator {
-
-    // Dependency order: base lib and SONAME alias first, then JNI shims, direct_bt and its alias, then JNI binding.
-    private static final String[] LIBS = { "libjaulib.so", "libjaulib.so.1", "libjaulib_pkg_jni.so",
-            "libjaulib_jni_jni.so", "libdirect_bt.so", "libdirect_bt.so.3", "libdirect_bt.so.1391460",
-            "libjavadirect_bt.so" };
 
     private ServiceRegistration<DirectBTNativeLibraryProvider> nativeLibraryProvider;
 
     @Override
     public void start(BundleContext context) throws Exception {
-        // Tell jau's loader not to use its TempJarCache (can't locate its jar in OSGi); load from
-        // java.library.path instead, where we extract below.
+        // No flat classpath in OSGi, so jaulib's TempJarCache can't find its jar; disable it. Direct-BT
+        // then loads via System.loadLibrary(name), which the framework satisfies from Bundle-NativeCode.
         System.setProperty("jau.pkg.UseTempJarCache", "false");
-        String arch = getNativeArch();
-        Path libDir = resolveLibraryPathDir();
-        Files.createDirectories(libDir);
-        ClassLoader cl = DirectBTActivator.class.getClassLoader();
-        for (String lib : LIBS) {
-            String resource = "natives/" + arch + "/" + lib;
-            try (InputStream in = cl.getResourceAsStream(resource)) {
-                if (in == null) {
-                    throw new IOException("Bundled native library not found in lib jar: " + resource);
-                }
-                Path target = libDir.resolve(lib);
-                Path tmp = Files.createTempFile(libDir, lib, ".tmp");
-                try {
-                    Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
-                    Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                } finally {
-                    Files.deleteIfExists(tmp);
-                }
-                System.out.println("[direct-bt] Extracted native library " + target);
-            }
-        }
         nativeLibraryProvider = context.registerService(DirectBTNativeLibraryProvider.class,
-                () -> libDir, new Hashtable<>());
-        System.out.println("[direct-bt] Native libraries ready in " + libDir);
+                new DirectBTNativeLibraryProviderImpl(), new Hashtable<>());
     }
 
     @Override
@@ -85,45 +56,7 @@ public final class DirectBTActivator implements BundleActivator {
             registration.unregister();
             nativeLibraryProvider = null;
         }
-        // Leave the extracted libs + loaded JNI in place: the native BTManager is a process singleton and the
-        // libraries cannot be unloaded; a binding refresh re-acquires them.
-    }
-
-    /**
-     * @return a WRITABLE directory on {@code java.library.path}; the first entry may be a non-writable system
-     *         dir, so pick the first writable one, fall back to {@code java.io.tmpdir}.
-     */
-    private static Path resolveLibraryPathDir() {
-        String libPath = System.getProperty("java.library.path");
-        if (libPath != null) {
-            for (String entry : libPath.split(File.pathSeparator)) {
-                if (!entry.isBlank()) {
-                    File dir = new File(entry);
-                    if ((dir.isDirectory() && dir.canWrite()) || (!dir.exists() && canCreate(dir))) {
-                        return dir.toPath();
-                    }
-                }
-            }
-        }
-        String tmp = System.getProperty("java.io.tmpdir");
-        return new File(tmp != null ? tmp : "/tmp").toPath();
-    }
-
-    private static boolean canCreate(File dir) {
-        File parent = dir.getParentFile();
-        return parent != null && parent.isDirectory() && parent.canWrite();
-    }
-
-    private static String getNativeArch() {
-        String os = System.getProperty("os.name", "").toLowerCase();
-        String arch = System.getProperty("os.arch", "").toLowerCase();
-        if (!os.startsWith("linux")) {
-            throw new UnsupportedOperationException("Direct-BT supports Linux only, found: " + os);
-        }
-        if (arch.equals("amd64") || arch.equals("x86_64")) {
-            return "linux-amd64";
-        }
-        throw new UnsupportedOperationException(
-                "No bundled Direct-BT natives for architecture '" + arch + "' (only linux-amd64 is bundled)");
+        // The native BTManager is a process singleton and the libraries cannot be unloaded; a binding
+        // refresh re-acquires them.
     }
 }

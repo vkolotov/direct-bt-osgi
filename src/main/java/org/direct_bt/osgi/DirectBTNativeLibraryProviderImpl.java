@@ -13,9 +13,8 @@
 package org.direct_bt.osgi;
 
 /**
- * Marker service published by the Direct-BT OSGi wrapper once its {@code BundleActivator} has configured
- * the native loader. Consumers may {@code @Reference} it to defer their own activation until Direct-BT's
- * natives can be loaded.
+ * Trivial {@link DirectBTNativeLibraryProvider} marker implementation. Its mere presence in the service
+ * registry signals that the wrapper's activator has run and the native loader is configured.
  */
-public interface DirectBTNativeLibraryProvider {
+final class DirectBTNativeLibraryProviderImpl implements DirectBTNativeLibraryProvider {
 }
