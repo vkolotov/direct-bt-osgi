@@ -46,7 +46,8 @@ public final class DirectBTActivator implements BundleActivator {
         // then loads via System.loadLibrary(name), which the framework satisfies from Bundle-NativeCode.
         System.setProperty("jau.pkg.UseTempJarCache", "false");
         nativeLibraryProvider = context.registerService(DirectBTNativeLibraryProvider.class,
-                new DirectBTNativeLibraryProviderImpl(), new Hashtable<>());
+                new DirectBTNativeLibraryProvider() {
+                }, new Hashtable<>());
     }
 
     @Override
