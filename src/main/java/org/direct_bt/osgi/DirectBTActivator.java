@@ -1,14 +1,16 @@
 /*
- * Copyright (c) 2010-2026 Contributors to the openHAB project
+ * Copyright (c) 2026 Vlad Kolotov
  *
- * See the NOTICE file(s) distributed with this work for additional
- * information.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * SPDX-License-Identifier: EPL-2.0
+ * See the NOTICE file distributed with this work for additional information,
+ * including attribution for the embedded Direct-BT / jaulib libraries.
+ *
+ * SPDX-License-Identifier: Apache-2.0
  */
 package org.direct_bt.osgi;
 

@@ -24,9 +24,38 @@
 
   <groupId>org.direct_bt</groupId>
   <artifactId>direct-bt-osgi</artifactId>
-  <version>3.3.5</version>
+  <version>3.3.4</version>
   <packaging>bundle</packaging>
+
   <name>Direct-BT OSGi bundle</name>
+  <description>
+    OSGi bundle wrapping the Direct-BT library: it embeds the Direct-BT fat jar (Java API + platform
+    natives), declares the natives via Bundle-NativeCode so the framework loads them, and adds a small
+    activator so consumers (e.g. the openHAB Direct-BT binding) can use Direct-BT in an OSGi runtime.
+    The version tracks the embedded org.direct_bt:direct-bt release.
+  </description>
+  <url>https://github.com/vkolotov/direct-bt-osgi</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Vlad Kolotov</name>
+      <url>https://github.com/vkolotov</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <url>https://github.com/vkolotov/direct-bt-osgi</url>
+    <connection>scm:git:https://github.com/vkolotov/direct-bt-osgi.git</connection>
+    <developerConnection>scm:git:git@github.com:vkolotov/direct-bt-osgi.git</developerConnection>
+  </scm>
 
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
@@ -62,14 +91,18 @@
             <Bundle-SymbolicName>org.direct_bt</Bundle-SymbolicName>
             <Bundle-Name>org.direct_bt</Bundle-Name>
             <Bundle-Activator>org.direct_bt.osgi.DirectBTActivator</Bundle-Activator>
-            <!-- Fold the published direct-bt jar (classes + natives/linux-amd64/*.so) into this bundle. -->
+            <!-- Ship the license + attribution inside the bundle (Apache-2.0 requirement). -->
+            <Include-Resource>META-INF/LICENSE=LICENSE,META-INF/NOTICE=NOTICE</Include-Resource>
+            <!-- Fold the published direct-bt jar (classes + natives/<os_and_arch>/*.so) into this bundle. -->
             <Embed-Dependency>direct-bt;inline=true</Embed-Dependency>
             <Embed-Transitive>false</Embed-Transitive>
             <!--
               Let the OSGi framework own native extraction. Bundle-NativeCode declares every .so this
-              bundle carries; on System.loadLibrary(basename) the framework unpacks the matching lib from
-              this bundle to its private cache and returns it via the bundle classloader's findLibrary.
-              osname/processor filter targets linux-amd64 only.
+              bundle carries, as one clause per architecture; on System.loadLibrary(basename) the framework
+              selects the clause matching the running osname/processor, unpacks the matching lib from this
+              bundle to its private cache, and returns it via the bundle classloader's findLibrary.
+              Architectures must match those embedded by the direct-bt multi-arch fat jar (linux-amd64,
+              linux-arm64). Add an armhf clause here once jaulib builds on 32-bit ARM.
             -->
             <Bundle-NativeCode>
               natives/linux-amd64/libjaulib.so;
@@ -78,7 +111,14 @@
               natives/linux-amd64/libdirect_bt.so;
               natives/linux-amd64/libjavadirect_bt.so;
               osname=Linux;
-              processor=x86-64
+              processor=x86-64,
+              natives/linux-arm64/libjaulib.so;
+              natives/linux-arm64/libjaulib_pkg_jni.so;
+              natives/linux-arm64/libjaulib_jni_jni.so;
+              natives/linux-arm64/libdirect_bt.so;
+              natives/linux-arm64/libjavadirect_bt.so;
+              osname=Linux;
+              processor=aarch64
             </Bundle-NativeCode>
             <Export-Package>org.direct_bt,org.direct_bt.osgi,org.jau.net</Export-Package>
             <Import-Package>org.osgi.framework</Import-Package>

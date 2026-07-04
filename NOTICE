@@ -1,0 +1,25 @@
+direct-bt-osgi
+Copyright (c) 2026 Vlad Kolotov
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+------------------------------------------------------------------------------
+This product embeds and redistributes the Direct-BT library and its jaulib
+dependency (Java classes and native shared libraries), which are licensed
+separately from this wrapper:
+
+Direct-BT (https://github.com/sgothel/direct_bt)
+  The MIT License (MIT)
+  Copyright (c) 2020-2023 Gothel Software e.K.
+  Copyright (c) 2020 Zafena AB
+  Copyright (c) 2015-2016 Intel Corporation
+
+jaulib (https://github.com/sgothel/jaulib)
+  Portions licensed under the MIT License and the Boost Software License 1.0
+  (BSL-1.0).
+  Copyright (c) Gothel Software e.K. and contributors.
+
+The full text of the MIT and Boost Software licenses, and the copyright
+notices of the embedded components, are available in the respective upstream
+project repositories. Their inclusion here does not relicense them; they remain
+under their original terms.

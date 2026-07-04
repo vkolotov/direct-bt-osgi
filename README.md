@@ -7,8 +7,9 @@ This is layer 2 of a two-layer setup:
 1. Upstream (sgothel/direct_bt) publishes the plain library `org.direct_bt:direct-bt` to a Maven
    repository (the fat jar with the Java API and platform natives). See the `maven/` module in that
    repo.
-2. This wrapper depends on that artifact, embeds it (Java classes + `natives/linux-amd64/*.so`), and
-   adds the OSGi manifest — including a `Bundle-NativeCode` header — plus a small `BundleActivator`.
+2. This wrapper depends on that artifact, embeds it (Java classes + `natives/<os_and_arch>/*.so` for
+   every architecture the fat jar carries), and adds the OSGi manifest — including a per-architecture
+   `Bundle-NativeCode` header — plus a small `BundleActivator`. Architectures: `linux-amd64`, `linux-arm64`.
    Output is `org.direct_bt:direct-bt-osgi`.
 
 The openHAB Direct-BT binding references the wrapper output as
