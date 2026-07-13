@@ -24,7 +24,7 @@
 
   <groupId>org.direct_bt</groupId>
   <artifactId>direct-bt-osgi</artifactId>
-  <version>3.3.4</version>
+  <version>3.3.5</version>
   <packaging>bundle</packaging>
 
   <name>Direct-BT OSGi bundle</name>
