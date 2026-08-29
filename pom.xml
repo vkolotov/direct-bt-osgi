@@ -16,13 +16,13 @@
       - exports org.direct_bt and org.jau.net, imports org.osgi.framework.
 
     The natives are embedded; nothing is fetched at runtime. The openHAB Direct-BT binding references
-    the output as mvn:org.direct_bt/direct-bt-osgi/<version>.
+    the output as mvn:io.github.vkolotov/direct-bt-osgi/<version>.
 
     Once org.direct_bt:direct-bt is published to a public repository, this builds with a plain
     'mvn install' against that artifact, no local fat-jar install needed.
   -->
 
-  <groupId>org.direct_bt</groupId>
+  <groupId>io.github.vkolotov</groupId>
   <artifactId>direct-bt-osgi</artifactId>
   <version>3.3.5</version>
   <packaging>bundle</packaging>
@@ -46,6 +46,7 @@
 
   <developers>
     <developer>
+      <id>vkolotov</id>
       <name>Vlad Kolotov</name>
       <url>https://github.com/vkolotov</url>
     </developer>
@@ -119,6 +120,66 @@
         </directbt.nativeCode>
       </properties>
     </profile>
+    <!--
+      Artifacts for a Maven Central release: sources, javadoc and GPG signatures, published through the
+      Central Portal. Activated with -Prelease so a normal build stays fast and needs no signing key.
+    -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.3.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.11.2</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.7</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.7.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <dependencies>
@@ -127,6 +188,12 @@
       <groupId>org.direct_bt</groupId>
       <artifactId>direct-bt</artifactId>
       <version>${project.version}</version>
+      <!--
+        Provided, not compile: the jar is inlined into this bundle by Embed-Dependency below, so the
+        classes ship here. org.direct_bt:direct-bt is not published to Maven Central, so a consumer
+        resolving this bundle must not inherit it as a transitive dependency.
+      -->
+      <scope>provided</scope>
     </dependency>
 
     <!-- OSGi framework API for the activator; provided by the runtime, not embedded. -->
@@ -171,4 +238,5 @@
       </plugin>
     </plugins>
   </build>
+
 </project>
