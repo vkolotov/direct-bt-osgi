@@ -16,15 +16,15 @@
       - exports org.direct_bt and org.jau.net, imports org.osgi.framework.
 
     The natives are embedded; nothing is fetched at runtime. The openHAB Direct-BT binding references
-    the output as mvn:org.direct_bt/direct-bt-osgi/<version>.
+    the output as mvn:io.github.vkolotov/direct-bt-osgi/<version>.
 
     Once org.direct_bt:direct-bt is published to a public repository, this builds with a plain
     'mvn install' against that artifact, no local fat-jar install needed.
   -->
 
-  <groupId>org.direct_bt</groupId>
+  <groupId>io.github.vkolotov</groupId>
   <artifactId>direct-bt-osgi</artifactId>
-  <version>3.3.5</version>
+  <version>3.3.6</version>
   <packaging>bundle</packaging>
 
   <name>Direct-BT OSGi bundle</name>
@@ -32,7 +32,7 @@
     OSGi bundle wrapping the Direct-BT library: it embeds the Direct-BT fat jar (Java API + platform
     natives), declares the natives via Bundle-NativeCode so the framework loads them, and adds a small
     activator so consumers (e.g. the openHAB Direct-BT binding) can use Direct-BT in an OSGi runtime.
-    The version tracks the embedded org.direct_bt:direct-bt release.
+    This bundle is versioned independently of the embedded Direct-BT release (see directbt.version).
   </description>
   <url>https://github.com/vkolotov/direct-bt-osgi</url>
 
@@ -46,6 +46,7 @@
 
   <developers>
     <developer>
+      <id>vkolotov</id>
       <name>Vlad Kolotov</name>
       <url>https://github.com/vkolotov</url>
     </developer>
@@ -60,14 +61,144 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!--
+      Version of the embedded org.direct_bt:direct-bt fat jar. Pinned rather than tracking
+      ${project.version}: this bundle is versioned independently of the library it wraps.
+    -->
+    <directbt.version>3.3.5</directbt.version>
+    <directbt.nativeCode>
+      natives/linux-amd64/libjaulib.so;
+      natives/linux-amd64/libjaulib_pkg_jni.so;
+      natives/linux-amd64/libjaulib_jni_jni.so;
+      natives/linux-amd64/libdirect_bt.so;
+      natives/linux-amd64/libjavadirect_bt.so;
+      osname=Linux;
+      processor=x86-64,
+      natives/linux-arm64/libjaulib.so;
+      natives/linux-arm64/libjaulib_pkg_jni.so;
+      natives/linux-arm64/libjaulib_jni_jni.so;
+      natives/linux-arm64/libdirect_bt.so;
+      natives/linux-arm64/libjavadirect_bt.so;
+      osname=Linux;
+      processor=aarch64
+    </directbt.nativeCode>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>linux-amd64</id>
+      <activation>
+        <property>
+          <name>directbt.nativeArch</name>
+          <value>linux-amd64</value>
+        </property>
+      </activation>
+      <properties>
+        <directbt.nativeCode>
+          natives/linux-amd64/libjaulib.so;
+          natives/linux-amd64/libjaulib_pkg_jni.so;
+          natives/linux-amd64/libjaulib_jni_jni.so;
+          natives/linux-amd64/libdirect_bt.so;
+          natives/linux-amd64/libjavadirect_bt.so;
+          osname=Linux;
+          processor=x86-64
+        </directbt.nativeCode>
+      </properties>
+    </profile>
+    <profile>
+      <id>linux-arm64</id>
+      <activation>
+        <property>
+          <name>directbt.nativeArch</name>
+          <value>linux-arm64</value>
+        </property>
+      </activation>
+      <properties>
+        <directbt.nativeCode>
+          natives/linux-arm64/libjaulib.so;
+          natives/linux-arm64/libjaulib_pkg_jni.so;
+          natives/linux-arm64/libjaulib_jni_jni.so;
+          natives/linux-arm64/libdirect_bt.so;
+          natives/linux-arm64/libjavadirect_bt.so;
+          osname=Linux;
+          processor=aarch64
+        </directbt.nativeCode>
+      </properties>
+    </profile>
+    <!--
+      Artifacts for a Maven Central release: sources, javadoc and GPG signatures, published through the
+      Central Portal. Activated with -Prelease so a normal build stays fast and needs no signing key.
+    -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>3.3.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.11.2</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.7</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.7.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <dependencies>
     <!-- The published Direct-BT library (plain fat jar: Java classes + natives). Embedded below. -->
     <dependency>
       <groupId>org.direct_bt</groupId>
       <artifactId>direct-bt</artifactId>
-      <version>${project.version}</version>
+      <version>${directbt.version}</version>
+      <!--
+        Provided, not compile: the jar is inlined into this bundle by Embed-Dependency below, so the
+        classes ship here. org.direct_bt:direct-bt is not published to Maven Central, so a consumer
+        resolving this bundle must not inherit it as a transitive dependency.
+      -->
+      <scope>provided</scope>
     </dependency>
 
     <!-- OSGi framework API for the activator; provided by the runtime, not embedded. -->
@@ -104,22 +235,7 @@
               Architectures must match those embedded by the direct-bt multi-arch fat jar (linux-amd64,
               linux-arm64). Add an armhf clause here once jaulib builds on 32-bit ARM.
             -->
-            <Bundle-NativeCode>
-              natives/linux-amd64/libjaulib.so;
-              natives/linux-amd64/libjaulib_pkg_jni.so;
-              natives/linux-amd64/libjaulib_jni_jni.so;
-              natives/linux-amd64/libdirect_bt.so;
-              natives/linux-amd64/libjavadirect_bt.so;
-              osname=Linux;
-              processor=x86-64,
-              natives/linux-arm64/libjaulib.so;
-              natives/linux-arm64/libjaulib_pkg_jni.so;
-              natives/linux-arm64/libjaulib_jni_jni.so;
-              natives/linux-arm64/libdirect_bt.so;
-              natives/linux-arm64/libjavadirect_bt.so;
-              osname=Linux;
-              processor=aarch64
-            </Bundle-NativeCode>
+            <Bundle-NativeCode>${directbt.nativeCode}</Bundle-NativeCode>
             <Export-Package>org.direct_bt,org.direct_bt.osgi,org.jau.net</Export-Package>
             <Import-Package>org.osgi.framework</Import-Package>
           </instructions>
@@ -127,4 +243,5 @@
       </plugin>
     </plugins>
   </build>
+
 </project>
