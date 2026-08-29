@@ -60,7 +60,66 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <directbt.nativeCode>
+      natives/linux-amd64/libjaulib.so;
+      natives/linux-amd64/libjaulib_pkg_jni.so;
+      natives/linux-amd64/libjaulib_jni_jni.so;
+      natives/linux-amd64/libdirect_bt.so;
+      natives/linux-amd64/libjavadirect_bt.so;
+      osname=Linux;
+      processor=x86-64,
+      natives/linux-arm64/libjaulib.so;
+      natives/linux-arm64/libjaulib_pkg_jni.so;
+      natives/linux-arm64/libjaulib_jni_jni.so;
+      natives/linux-arm64/libdirect_bt.so;
+      natives/linux-arm64/libjavadirect_bt.so;
+      osname=Linux;
+      processor=aarch64
+    </directbt.nativeCode>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>linux-amd64</id>
+      <activation>
+        <property>
+          <name>directbt.nativeArch</name>
+          <value>linux-amd64</value>
+        </property>
+      </activation>
+      <properties>
+        <directbt.nativeCode>
+          natives/linux-amd64/libjaulib.so;
+          natives/linux-amd64/libjaulib_pkg_jni.so;
+          natives/linux-amd64/libjaulib_jni_jni.so;
+          natives/linux-amd64/libdirect_bt.so;
+          natives/linux-amd64/libjavadirect_bt.so;
+          osname=Linux;
+          processor=x86-64
+        </directbt.nativeCode>
+      </properties>
+    </profile>
+    <profile>
+      <id>linux-arm64</id>
+      <activation>
+        <property>
+          <name>directbt.nativeArch</name>
+          <value>linux-arm64</value>
+        </property>
+      </activation>
+      <properties>
+        <directbt.nativeCode>
+          natives/linux-arm64/libjaulib.so;
+          natives/linux-arm64/libjaulib_pkg_jni.so;
+          natives/linux-arm64/libjaulib_jni_jni.so;
+          natives/linux-arm64/libdirect_bt.so;
+          natives/linux-arm64/libjavadirect_bt.so;
+          osname=Linux;
+          processor=aarch64
+        </directbt.nativeCode>
+      </properties>
+    </profile>
+  </profiles>
 
   <dependencies>
     <!-- The published Direct-BT library (plain fat jar: Java classes + natives). Embedded below. -->
@@ -104,22 +163,7 @@
               Architectures must match those embedded by the direct-bt multi-arch fat jar (linux-amd64,
               linux-arm64). Add an armhf clause here once jaulib builds on 32-bit ARM.
             -->
-            <Bundle-NativeCode>
-              natives/linux-amd64/libjaulib.so;
-              natives/linux-amd64/libjaulib_pkg_jni.so;
-              natives/linux-amd64/libjaulib_jni_jni.so;
-              natives/linux-amd64/libdirect_bt.so;
-              natives/linux-amd64/libjavadirect_bt.so;
-              osname=Linux;
-              processor=x86-64,
-              natives/linux-arm64/libjaulib.so;
-              natives/linux-arm64/libjaulib_pkg_jni.so;
-              natives/linux-arm64/libjaulib_jni_jni.so;
-              natives/linux-arm64/libdirect_bt.so;
-              natives/linux-arm64/libjavadirect_bt.so;
-              osname=Linux;
-              processor=aarch64
-            </Bundle-NativeCode>
+            <Bundle-NativeCode>${directbt.nativeCode}</Bundle-NativeCode>
             <Export-Package>org.direct_bt,org.direct_bt.osgi,org.jau.net</Export-Package>
             <Import-Package>org.osgi.framework</Import-Package>
           </instructions>
