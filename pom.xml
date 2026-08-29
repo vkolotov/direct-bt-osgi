@@ -24,7 +24,7 @@
 
   <groupId>io.github.vkolotov</groupId>
   <artifactId>direct-bt-osgi</artifactId>
-  <version>3.3.5</version>
+  <version>3.3.6</version>
   <packaging>bundle</packaging>
 
   <name>Direct-BT OSGi bundle</name>
@@ -32,7 +32,7 @@
     OSGi bundle wrapping the Direct-BT library: it embeds the Direct-BT fat jar (Java API + platform
     natives), declares the natives via Bundle-NativeCode so the framework loads them, and adds a small
     activator so consumers (e.g. the openHAB Direct-BT binding) can use Direct-BT in an OSGi runtime.
-    The version tracks the embedded org.direct_bt:direct-bt release.
+    This bundle is versioned independently of the embedded Direct-BT release (see directbt.version).
   </description>
   <url>https://github.com/vkolotov/direct-bt-osgi</url>
 
@@ -61,6 +61,11 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!--
+      Version of the embedded org.direct_bt:direct-bt fat jar. Pinned rather than tracking
+      ${project.version}: this bundle is versioned independently of the library it wraps.
+    -->
+    <directbt.version>3.3.5</directbt.version>
     <directbt.nativeCode>
       natives/linux-amd64/libjaulib.so;
       natives/linux-amd64/libjaulib_pkg_jni.so;
@@ -187,7 +192,7 @@
     <dependency>
       <groupId>org.direct_bt</groupId>
       <artifactId>direct-bt</artifactId>
-      <version>${project.version}</version>
+      <version>${directbt.version}</version>
       <!--
         Provided, not compile: the jar is inlined into this bundle by Embed-Dependency below, so the
         classes ship here. org.direct_bt:direct-bt is not published to Maven Central, so a consumer
